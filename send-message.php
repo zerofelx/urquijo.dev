@@ -11,16 +11,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         'web-development' => 'Desarrollo Web',
         'backend-development' => 'Desarrollo Backend',
         'api-integration' => 'Integración de APIs',
+        'api-development' => 'Creación de APIs',
         'database-design' => 'Diseño de Bases de Datos',
-        'server-management' => 'Gestión de Servidores',
-        'ui-ux-design' => 'Diseño UI/UX'
+        'server-management' => 'Gestión de Servidores'
     ];
     
     $serviceText = $serviceTranslations[$service] ?? $service;
     
     // Configurar el correo
-    $to = "tu_correo@urquijo.dev";
-    $subject = "Nueva solicitud de servicio: $serviceText";
+    $to = "jesusurquijo.job@gmail.com";
+    $subject = "Nuevo Freelance disponible: $serviceText";
 
     // Crear el mensaje en HTML con estilos modernos
     $message = "
@@ -28,7 +28,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <html>
     <head>
         <meta charset='UTF-8'>
-        <title>Nuevo Mensaje de Contacto</title>
+        <title>Un nuevo contrato está disponible</title>
     </head>
     <body style='margin: 0; padding: 0; background-color: #f6f6f6; font-family: Arial, sans-serif;'>
         <table role='presentation' width='100%' style='width: 100%; background-color: #f6f6f6; padding: 20px;'>
