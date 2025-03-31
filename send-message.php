@@ -5,30 +5,101 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
     $phone = filter_var($_POST['phone'] ?? 'No proporcionado', FILTER_SANITIZE_STRING);
     $service = filter_var($_POST['service'], FILTER_SANITIZE_STRING);
-
+    
+    // Traducir el valor del servicio a español
+    $serviceTranslations = [
+        'web-development' => 'Desarrollo Web',
+        'backend-development' => 'Desarrollo Backend',
+        'api-integration' => 'Integración de APIs',
+        'database-design' => 'Diseño de Bases de Datos',
+        'server-management' => 'Gestión de Servidores',
+        'ui-ux-design' => 'Diseño UI/UX'
+    ];
+    
+    $serviceText = $serviceTranslations[$service] ?? $service;
+    
     // Configurar el correo
-    $to = "jesusurquijo.job@gmail.com"; // Tu correo de Zoho
-    $subject = "Nuevo Freelance disponible - $service";
+    $to = "tu_correo@urquijo.dev";
+    $subject = "Nueva solicitud de servicio: $serviceText";
 
-    // Crear el mensaje en HTML
+    // Crear el mensaje en HTML con estilos modernos
     $message = "
+    <!DOCTYPE html>
     <html>
     <head>
-        <title>Nuevo mensaje de contacto</title>
+        <meta charset='UTF-8'>
+        <title>Nuevo Mensaje de Contacto</title>
     </head>
-    <body>
-        <h2>Has recibido un nuevo mensaje de contacto</h2>
-        <table>
-            <tr><td><strong>Nombre:</strong></td><td>$name</td></tr>
-            <tr><td><strong>Correo:</strong></td><td>$email</td></tr>
-            <tr><td><strong>Teléfono:</strong></td><td>$phone</td></tr>
-            <tr><td><strong>Servicio:</strong></td><td>$service</td></tr>
+    <body style='margin: 0; padding: 0; background-color: #f6f6f6; font-family: Arial, sans-serif;'>
+        <table role='presentation' width='100%' style='width: 100%; background-color: #f6f6f6; padding: 20px;'>
+            <tr>
+                <td align='center'>
+                    <table role='presentation' style='max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
+                        <!-- Header -->
+                        <tr>
+                            <td style='background-color: #8b5cf6; padding: 30px 40px; text-align: center;'>
+                                <h1 style='color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;'>
+                                    Nueva Solicitud de Contacto
+                                </h1>
+                            </td>
+                        </tr>
+                        
+                        <!-- Content -->
+                        <tr>
+                            <td style='padding: 40px;'>
+                                <table role='presentation' width='100%'>
+                                    <tr>
+                                        <td style='padding: 10px 0; border-bottom: 1px solid #eee;'>
+                                            <strong style='color: #8b5cf6; display: inline-block; width: 120px;'>Nombre:</strong>
+                                            <span style='color: #333333;'>$name</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style='padding: 10px 0; border-bottom: 1px solid #eee;'>
+                                            <strong style='color: #8b5cf6; display: inline-block; width: 120px;'>Email:</strong>
+                                            <span style='color: #333333;'>$email</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style='padding: 10px 0; border-bottom: 1px solid #eee;'>
+                                            <strong style='color: #8b5cf6; display: inline-block; width: 120px;'>Teléfono:</strong>
+                                            <span style='color: #333333;'>$phone</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style='padding: 10px 0; border-bottom: 1px solid #eee;'>
+                                            <strong style='color: #8b5cf6; display: inline-block; width: 120px;'>Servicio:</strong>
+                                            <span style='color: #333333;'>$serviceText</span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        
+                        <!-- Footer -->
+                        <tr>
+                            <td style='background-color: #f8f7ff; padding: 20px 40px; text-align: center; color: #666666; font-size: 14px;'>
+                                <p style='margin: 0;'>Este mensaje fue enviado desde el formulario de contacto de urquijo.dev</p>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <!-- Timestamp -->
+                    <table role='presentation' style='max-width: 600px; width: 100%;'>
+                        <tr>
+                            <td style='padding: 20px; text-align: center; color: #999999; font-size: 12px;'>
+                                Mensaje recibido el " . date('d/m/Y') . " a las " . date('H:i') . "
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
         </table>
     </body>
     </html>
     ";
 
-    // Cabeceras para envío HTML y evitar spam
+    // Cabeceras para envío HTML
     $headers = array(
         'MIME-Version: 1.0',
         'Content-type: text/html; charset=UTF-8',
