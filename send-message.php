@@ -108,13 +108,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         'X-Mailer: PHP/' . phpversion()
     );
 
-    // Enviar el correo
+    // En lugar de redireccionar, enviamos una respuesta JSON
     if(mail($to, $subject, $message, implode("\r\n", $headers))) {
-        header("Location: /?success=true");
-        exit();
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'message' => 'Mensaje enviado correctamente'
+        ]);
     } else {
-        header("Location: /?error=true");
-        exit();
+        header('Content-Type: application/json');
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Error al enviar el mensaje'
+        ]);
     }
+    exit();
 }
 ?> 
