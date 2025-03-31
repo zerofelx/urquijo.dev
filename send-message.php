@@ -39,7 +39,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <tr>
                             <td style='background-color: #8b5cf6; padding: 30px 40px; text-align: center;'>
                                 <h1 style='color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;'>
-                                    Nueva Solicitud de Contacto
+                                    Nuevo contrato disponible
                                 </h1>
                             </td>
                         </tr>
