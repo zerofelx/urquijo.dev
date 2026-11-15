@@ -20,8 +20,9 @@ if (!empty($_POST['website'])) {
 // Single-line text: trim, drop control characters (blocks header injection), cap length.
 function clean_line($value, int $max = 200): string
 {
-    $value = preg_replace('/[\x00-\x1F\x7F]+/u', ' ', (string) $value);
-    return mb_substr(trim($value), 0, $max);
+    $value = trim(preg_replace('/[\x00-\x1F\x7F]+/u', ' ', (string) $value));
+    // mbstring is not enabled on every host.
+    return function_exists('mb_substr') ? mb_substr($value, 0, $max) : substr($value, 0, $max);
 }
 
 $name = clean_line($_POST['name'] ?? '', 100);
@@ -107,16 +108,23 @@ $message = "
 </html>
 ";
 
+// The sender must be a mailbox that exists on this domain's hosting, or the
+// server may refuse the message (or the receiver may drop it as spam).
+$from = 'jesus@urquijo.dev';
+
 $replyName = '=?UTF-8?B?' . base64_encode($name) . '?=';
 $headers = [
     'MIME-Version: 1.0',
     'Content-type: text/html; charset=UTF-8',
-    'From: Formulario Web <contacto@urquijo.dev>',
+    "From: Formulario Web <{$from}>",
     "Reply-To: {$replyName} <{$email}>",
 ];
 
-if (mail($to, $subject, $message, implode("\r\n", $headers))) {
+// "-f" sets the envelope sender too, which many shared hosts require.
+if (mail($to, $subject, $message, implode("\r\n", $headers), "-f{$from}")) {
     respond(200, true, 'Mensaje enviado correctamente');
 }
 
+// Leave the real cause in the hosting's PHP error log.
+error_log('send-message.php: mail() falló: ' . json_encode(error_get_last()));
 respond(500, false, 'Error al enviar el mensaje');
