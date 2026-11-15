@@ -8,6 +8,37 @@ function respond(int $status, bool $success, string $message): void
     exit();
 }
 
+/*
+ * Mail settings. Each one comes from an environment variable when the server
+ * provides it, otherwise from a .env file one level ABOVE the web root
+ * (next to public_html, never inside it), otherwise from the default below.
+ * This repo is public: the password lives only in that .env on the server.
+ * See .env.example in the source repo.
+ */
+const ENV_FILE = __DIR__ . '/../.env';
+
+function load_config(): array
+{
+    $defaults = [
+        'SMTP_HOST' => 'smtp.hostinger.com',
+        'SMTP_PORT' => '465',
+        'SMTP_USER' => 'forms@urquijo.dev',
+        'SMTP_PASS' => '',
+        'MAIL_TO' => 'jesusurquijo.job@gmail.com',
+    ];
+
+    // RAW keeps the password as written (no "true"/"null" conversions); wrap it in
+    // double quotes in the file if it contains ; # = or spaces.
+    $file = is_readable(ENV_FILE) ? (parse_ini_file(ENV_FILE, false, INI_SCANNER_RAW) ?: []) : [];
+
+    $config = [];
+    foreach ($defaults as $key => $default) {
+        $value = getenv($key);
+        $config[$key] = (string) ($value !== false && $value !== '' ? $value : ($file[$key] ?? $default));
+    }
+    return $config;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond(405, false, 'Método no permitido');
 }
@@ -48,8 +79,7 @@ $e = fn(string $value): string => htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 $serviceText = $serviceTranslations[$service];
 $phoneText = $phone !== '' ? $phone : 'No proporcionado';
 
-$to = 'jesusurquijo.job@gmail.com';
-$subject = '=?UTF-8?B?' . base64_encode("Nuevo Freelance disponible: $serviceText") . '?=';
+$subject = "Nuevo Freelance disponible: $serviceText";
 
 $rows = '';
 foreach (['Nombre' => $name, 'Email' => $email, 'Teléfono' => $phoneText, 'Servicio' => $serviceText] as $label => $value) {
@@ -108,23 +138,45 @@ $message = "
 </html>
 ";
 
-// The sender must be a mailbox that exists on this domain's hosting, or the
-// server may refuse the message (or the receiver may drop it as spam).
-$from = 'jesus@urquijo.dev';
-
-$replyName = '=?UTF-8?B?' . base64_encode($name) . '?=';
-$headers = [
-    'MIME-Version: 1.0',
-    'Content-type: text/html; charset=UTF-8',
-    "From: Formulario Web <{$from}>",
-    "Reply-To: {$replyName} <{$email}>",
-];
-
-// "-f" sets the envelope sender too, which many shared hosts require.
-if (mail($to, $subject, $message, implode("\r\n", $headers), "-f{$from}")) {
-    respond(200, true, 'Mensaje enviado correctamente');
+$config = load_config();
+if ($config['SMTP_PASS'] === '') {
+    error_log('send-message.php: falta SMTP_PASS (ni variable de entorno ni ' . ENV_FILE . ')');
+    respond(500, false, 'Error al enviar el mensaje');
 }
 
-// Leave the real cause in the hosting's PHP error log.
-error_log('send-message.php: mail() falló: ' . json_encode(error_get_last()));
-respond(500, false, 'Error al enviar el mensaje');
+require __DIR__ . '/lib/phpmailer/Exception.php';
+require __DIR__ . '/lib/phpmailer/PHPMailer.php';
+require __DIR__ . '/lib/phpmailer/SMTP.php';
+
+$mail = new PHPMailer\PHPMailer\PHPMailer(true);
+
+try {
+    // Authenticated SMTP, the same route as a mail client: the message leaves
+    // through the mailbox's server, so SPF and DKIM line up with urquijo.dev.
+    $mail->isSMTP();
+    $mail->Host = $config['SMTP_HOST'];
+    $mail->Port = (int) $config['SMTP_PORT'];
+    $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+    $mail->SMTPAuth = true;
+    $mail->Username = $config['SMTP_USER'];
+    $mail->Password = $config['SMTP_PASS'];
+    $mail->Timeout = 15;
+
+    $mail->CharSet = PHPMailer\PHPMailer\PHPMailer::CHARSET_UTF8;
+    // The sender has to be the mailbox we log in with.
+    $mail->setFrom($config['SMTP_USER'], 'Formulario urquijo.dev');
+    $mail->addAddress($config['MAIL_TO']);
+    $mail->addReplyTo($email, $name);
+
+    $mail->Subject = $subject;
+    $mail->isHTML(true);
+    $mail->Body = $message;
+    $mail->AltBody = "Nombre: {$name}\nEmail: {$email}\nTeléfono: {$phoneText}\nServicio: {$serviceText}";
+
+    $mail->send();
+    respond(200, true, 'Mensaje enviado correctamente');
+} catch (PHPMailer\PHPMailer\Exception $error) {
+    // Leave the real cause in the hosting's PHP error log, never in the response.
+    error_log('send-message.php: SMTP falló: ' . $mail->ErrorInfo);
+    respond(500, false, 'Error al enviar el mensaje');
+}
