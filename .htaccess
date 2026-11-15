@@ -1,0 +1,7 @@
+# Safety net: never serve hidden files or folders (.env, .git, .htpasswd...),
+# in case one ever ends up inside the web root by mistake.
+# .well-known stays reachable: SSL certificate checks use it.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule (^|/)\.(?!well-known(/|$)) - [F]
+</IfModule>
