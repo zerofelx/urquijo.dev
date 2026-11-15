@@ -17,6 +17,14 @@ function respond(int $status, bool $success, string $message): void
  */
 const ENV_FILE = __DIR__ . '/../.env';
 
+// Errors go to a log next to the .env (outside the web root), where the hosting's
+// file manager can open it. Falls back to the server's default log.
+const LOG_FILE = __DIR__ . '/../send-message.log';
+if (is_writable(dirname(LOG_FILE))) {
+    ini_set('log_errors', '1');
+    ini_set('error_log', LOG_FILE);
+}
+
 function load_config(): array
 {
     $defaults = [
@@ -140,7 +148,8 @@ $message = "
 
 $config = load_config();
 if ($config['SMTP_PASS'] === '') {
-    error_log('send-message.php: falta SMTP_PASS (ni variable de entorno ni ' . ENV_FILE . ')');
+    error_log('send-message.php: falta SMTP_PASS. ¿Existe ' . ENV_FILE . '? '
+        . (file_exists(ENV_FILE) ? 'sí, legible: ' . (is_readable(ENV_FILE) ? 'sí' : 'no') : 'no'));
     respond(500, false, 'Error al enviar el mensaje');
 }
 
